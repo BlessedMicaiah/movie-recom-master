@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieFlix - Movie Recommendation System</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #141414;
+            color: #fff;
+        }
+        .navbar {
+            background-color: #000;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .logo {
+            color: #e50914;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .search-container {
+            display: flex;
+            gap: 10px;
+        }
+        .search-input {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #333;
+            color: #fff;
+            width: 250px;
+        }
+        .search-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #e50914;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        main {
+            padding: 20px;
+        }
+        .hero-section {
+            height: 80vh;
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://image.tmdb.org/t/p/original/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 50px;
+            margin-bottom: 30px;
+        }
+        .hero-title {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .hero-description {
+            font-size: 18px;
+            max-width: 600px;
+            margin-bottom: 30px;
+        }
+        .hero-button {
+            background-color: #e50914;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            width: fit-content;
+        }
+        .genre-section {
+            margin-bottom: 40px;
+        }
+        .section-title {
+            font-size: 22px;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #e50914;
+        }
+        .movie-row {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding: 10px 0;
+            gap: 15px;
+        }
+        .movie-row::-webkit-scrollbar {
+            height: 8px;
+        }
+        .movie-row::-webkit-scrollbar-track {
+            background: #222;
+        }
+        .movie-row::-webkit-scrollbar-thumb {
+            background: #e50914;
+            border-radius: 4px;
+        }
+        .movie-card {
+            min-width: 200px;
+            border-radius: 4px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        .movie-card:hover {
+            transform: scale(1.05);
+        }
+        .movie-poster {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+        .movie-title {
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            box-sizing: border-box;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+        }
+        .modal-content {
+            background-color: #181818;
+            margin: 5% auto;
+            padding: 20px;
+            width: 70%;
+            max-width: 800px;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .close-button:hover {
+            color: #fff;
+        }
+        .movie-details {
+            display: flex;
+            gap: 20px;
+        }
+        .movie-poster-lg {
+            width: 200px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        .movie-info {
+            flex: 1;
+        }
+        .movie-info h2 {
+            margin-top: 0;
+            font-size: 28px;
+        }
+        .movie-overview {
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+        .movie-meta {
+            margin-top: 15px;
+            display: flex;
+            gap: 15px;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .recommendations-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+        .recommendations-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+        }
+        .search-results {
+            margin-bottom: 40px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">MovieFlix</div>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search movies...">
+            <button id="searchButton" class="search-button">Search</button>
+        </div>
+    </div>
+    
+    <main>
+        <div id="loading" class="loading">Loading recommendations...</div>
+        
+        <div class="hero-section" id="heroSection">
+            <h1 class="hero-title">Discover Movie Magic</h1>
+            <p class="hero-description">Find your next favorite movie with our advanced recommendation system. Search for a movie you love, and we'll suggest similar titles you might enjoy.</p>
+            <button class="hero-button" id="exploreButton">Explore Now</button>
+        </div>
+        
+        <div id="searchResults" class="search-results">
+            <h2 class="section-title">Search Results</h2>
+            <div id="searchResultsContainer" class="movie-row"></div>
+        </div>
+        
+        <div class="genre-section">
+            <h2 class="section-title">Trending Now</h2>
+            <div id="trendingContainer" class="movie-row">
+                <!-- Trending movies will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="genre-section">
+            <h2 class="section-title">Action & Adventure</h2>
+            <div id="actionContainer" class="movie-row">
+                <!-- Action movies will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="genre-section">
+            <h2 class="section-title">Drama & Suspense</h2>
+            <div id="dramaContainer" class="movie-row">
+                <!-- Drama movies will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="genre-section">
+            <h2 class="section-title">Sci-Fi & Fantasy</h2>
+            <div id="scifiContainer" class="movie-row">
+                <!-- Sci-Fi movies will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="genre-section">
+            <h2 class="section-title">Comedy</h2>
+            <div id="comedyContainer" class="movie-row">
+                <!-- Comedy movies will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="genre-section">
+            <h2 class="section-title">Horror</h2>
+            <div id="horrorContainer" class="movie-row">
+                <!-- Horror movies will be inserted here -->
+            </div>
+        </div>
+    </main>
+    
+    <div id="movieModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeModal">&times;</span>
+            <div id="movieDetails" class="movie-details">
+                <!-- Movie details will be inserted here -->
+            </div>
+            <div id="recommendationsSection" class="recommendations-section">
+                <h3 class="recommendations-title">You might also like:</h3>
+                <div id="recommendationsContainer" class="movie-row">
+                    <!-- Movie recommendations will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Base URLs
+        const API_BASE_URL = 'http://localhost:5000/api';
+        const IMG_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+        
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const exploreButton = document.getElementById('exploreButton');
+        const heroSection = document.getElementById('heroSection');
+        const trendingContainer = document.getElementById('trendingContainer');
+        const actionContainer = document.getElementById('actionContainer');
+        const dramaContainer = document.getElementById('dramaContainer');
+        const scifiContainer = document.getElementById('scifiContainer');
+        const comedyContainer = document.getElementById('comedyContainer');
+        const horrorContainer = document.getElementById('horrorContainer');
+        const searchResults = document.getElementById('searchResults');
+        const searchResultsContainer = document.getElementById('searchResultsContainer');
+        const movieModal = document.getElementById('movieModal');
+        const closeModal = document.getElementById('closeModal');
+        const movieDetails = document.getElementById('movieDetails');
+        const recommendationsContainer = document.getElementById('recommendationsContainer');
+        const loadingEl = document.getElementById('loading');
+        
+        // Sample genre classifications (in a real app, these would come from the API)
+        const genres = {
+            action: [
+                "Avengers: Infinity War", "Deadpool 2", "Rampage", "Die Hard", "Mad Max: Fury Road", 
+                "John Wick", "The Dark Knight", "Mission: Impossible - Fallout", "Black Panther", "Wonder Woman",
+                "Terminator 2: Judgment Day", "The Raid", "Kill Bill", "Aliens", "Predator",
+                "Casino Royale", "Skyfall", "Gladiator", "300", "Fast & Furious", 
+                "Jurassic Park", "Captain America: Civil War", "Iron Man", "Thor: Ragnarok", "Captain Marvel",
+                "Spider-Man: Homecoming", "Wonder Woman 1984", "Aquaman", "The Matrix", "Baby Driver",
+                "Indiana Jones: Raiders of the Lost Ark", "The Bourne Identity", "Batman Begins", "The Avengers", "Edge of Tomorrow",
+                "Speed", "Con Air", "Face/Off", "The Rock", "Bad Boys", "Lethal Weapon", "Rush Hour", "Top Gun", "Kingsman: The Secret Service"
+            ],
+            drama: [
+                "A Quiet Place", "Ready Player One", "The Shawshank Redemption", "The Godfather", "Schindler's List",
+                "Fight Club", "Forrest Gump", "The Green Mile", "The Prestige", "The Departed",
+                "The Social Network", "No Country for Old Men", "There Will Be Blood", "The Revenant", "Whiplash",
+                "12 Angry Men", "The King's Speech", "The Pianist", "A Beautiful Mind", "American Beauty",
+                "The Sixth Sense", "Good Will Hunting", "Interstellar", "The Shining", "Memento",
+                "Se7en", "The Silence of the Lambs", "Pulp Fiction", "The Usual Suspects", "Gone Girl",
+                "The Curious Case of Benjamin Button", "Manchester by the Sea", "Moonlight", "The Shape of Water", "Fargo",
+                "American History X", "Taxi Driver", "Rain Man", "Black Swan", "The Wolf of Wall Street"
+            ],
+            scifi: [
+                "Avengers: Infinity War", "Ready Player One", "Blade Runner 2049", "The Matrix", "Inception", 
+                "Star Wars: The Empire Strikes Back", "E.T. the Extra-Terrestrial", "Avatar", "Interstellar", "Arrival",
+                "District 9", "Ex Machina", "Alien", "The Terminator", "WALL-E", 
+                "Back to the Future", "The Fifth Element", "Children of Men", "Edge of Tomorrow", "Looper",
+                "The Martian", "Mad Max: Fury Road", "Minority Report", "Tron: Legacy", "I, Robot",
+                "A.I. Artificial Intelligence", "Her", "Gravity", "The Day the Earth Stood Still", "2001: A Space Odyssey",
+                "Prometheus", "Gattaca", "The Abyss", "Sunshine", "Dune", "Solaris", "Contact", "Moon", "Annihilation", "Passengers"
+            ],
+            comedy: [
+                "The Hangover", "Superbad", "Bridesmaids", "Dumb and Dumber", "Anchorman", 
+                "Step Brothers", "Tropic Thunder", "Borat", "The 40-Year-Old Virgin", "Knocked Up",
+                "Hot Fuzz", "Shaun of the Dead", "Zoolander", "Ghostbusters", "Groundhog Day", 
+                "The Big Lebowski", "Ferris Bueller's Day Off", "Caddyshack", "Wedding Crashers", "Airplane!"
+            ],
+            horror: [
+                "The Exorcist", "The Shining", "Hereditary", "Get Out", "A Quiet Place", 
+                "It", "The Conjuring", "Alien", "The Thing", "Halloween",
+                "The Babadook", "The Witch", "Midsommar", "Psycho", "The Blair Witch Project", 
+                "The Ring", "Saw", "Insidious", "Sinister", "The Descent"
+            ]
+        };
+        
+        // Event Listeners
+        searchButton.addEventListener('click', searchMovies);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchMovies();
+            }
+        });
+        exploreButton.addEventListener('click', fetchInitialMovies);
+        closeModal.addEventListener('click', () => {
+            movieModal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', (e) => {
+            if (e.target === movieModal) {
+                movieModal.style.display = 'none';
+            }
+        });
+        
+        // Initial load
+        window.addEventListener('DOMContentLoaded', fetchInitialMovies);
+        
+        // Functions for loading genre sections
+        async function fetchInitialMovies() {
+            loadingEl.style.display = 'block';
+            heroSection.style.display = 'flex';
+            
+            try {
+                // Fetch trending movies (using Avengers as seed)
+                const trendingResponse = await fetch(`${API_BASE_URL}/content/Avengers`);
+                const trendingMovies = await trendingResponse.json();
+                displayMoviesInRow(trendingMovies, trendingContainer);
+                
+                // For demo, we'll simulate different genres by using different seed movies
+                // In a real app, these would be separate API endpoints for different genres
+                
+                // Action movies
+                const actionResponse = await fetch(`${API_BASE_URL}/content/Deadpool`);
+                const actionMovies = await actionResponse.json();
+                displayMoviesInRow(actionMovies, actionContainer);
+                
+                // Drama movies 
+                const dramaResponse = await fetch(`${API_BASE_URL}/content/Quiet`);
+                const dramaMovies = await dramaResponse.json();
+                displayMoviesInRow(dramaMovies, dramaContainer);
+                
+                // Sci-Fi movies
+                const scifiResponse = await fetch(`${API_BASE_URL}/content/Player`);
+                const scifiMovies = await scifiResponse.json();
+                displayMoviesInRow(scifiMovies, scifiContainer);
+                
+                // Comedy movies
+                const comedyResponse = await fetch(`${API_BASE_URL}/content/Hangover`);
+                const comedyMovies = await comedyResponse.json();
+                displayMoviesInRow(comedyMovies, comedyContainer);
+                
+                // Horror movies
+                const horrorResponse = await fetch(`${API_BASE_URL}/content/Exorcist`);
+                const horrorMovies = await horrorResponse.json();
+                displayMoviesInRow(horrorMovies, horrorContainer);
+                
+                // Set hero section background to a random trending movie
+                if (trendingMovies.length > 0) {
+                    const randomMovie = trendingMovies[Math.floor(Math.random() * trendingMovies.length)];
+                    heroSection.style.background = `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('${IMG_BASE_URL}${randomMovie.poster_path}')`;
+                    heroSection.style.backgroundSize = 'cover';
+                    heroSection.style.backgroundPosition = 'center';
+                }
+                
+            } catch (error) {
+                console.error('Error fetching initial movies:', error);
+                trendingContainer.innerHTML = '<p>Failed to load movies. Please try again later.</p>';
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+        
+        async function searchMovies() {
+            const query = searchInput.value.trim();
+            if (!query) return;
+            
+            loadingEl.style.display = 'block';
+            searchResults.style.display = 'block';
+            heroSection.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/content/${query}`);
+                const movies = await response.json();
+                
+                if (movies.length === 0) {
+                    searchResultsContainer.innerHTML = '<p>No movies found for your search.</p>';
+                } else {
+                    displayMoviesInRow(movies, searchResultsContainer);
+                    
+                    // Update genre rows with related recommendations
+                    // In a real app, these would be fetched from the API based on the search results
+                    // Here we're reusing the same data for demo purposes
+                    displayMoviesInRow(shuffleArray(movies), actionContainer);
+                    displayMoviesInRow(shuffleArray(movies), dramaContainer);
+                    displayMoviesInRow(shuffleArray(movies), scifiContainer);
+                    displayMoviesInRow(shuffleArray(movies), comedyContainer);
+                    displayMoviesInRow(shuffleArray(movies), horrorContainer);
+                }
+            } catch (error) {
+                console.error('Error searching movies:', error);
+                searchResultsContainer.innerHTML = '<p>Failed to search movies. Please try again later.</p>';
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+        
+        function displayMoviesInRow(movies, container) {
+            container.innerHTML = '';
+            
+            movies.forEach(movie => {
+                const movieCard = document.createElement('div');
+                movieCard.className = 'movie-card';
+                movieCard.addEventListener('click', () => showMovieDetails(movie));
+                
+                const posterUrl = movie.poster_path ? `${IMG_BASE_URL}${movie.poster_path}` : 'https://via.placeholder.com/200x300?text=No+Image';
+                
+                movieCard.innerHTML = `
+                    <img src="${posterUrl}" alt="${movie.title}" class="movie-poster">
+                    <div class="movie-title">${movie.title}</div>
+                `;
+                
+                container.appendChild(movieCard);
+            });
+        }
+        
+        async function showMovieDetails(movie) {
+            movieModal.style.display = 'block';
+            
+            try {
+                const posterUrl = movie.poster_path ? `${IMG_BASE_URL}${movie.poster_path}` : 'https://via.placeholder.com/200x450?text=No+Image';
+                
+                movieDetails.innerHTML = `
+                    <img src="${posterUrl}" alt="${movie.title}" class="movie-poster-lg">
+                    <div class="movie-info">
+                        <h2>${movie.title}</h2>
+                        <div class="movie-meta">
+                            <div class="meta-item">
+                                <span>⭐</span>
+                                <span>${movie.vote_average}/10</span>
+                            </div>
+                            <div class="meta-item">
+                                <span>📅</span>
+                                <span>${movie.release_date}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span>🔥</span>
+                                <span>Popularity: ${Math.round(movie.popularity)}</span>
+                            </div>
+                        </div>
+                        <p class="movie-overview">${movie.overview}</p>
+                    </div>
+                `;
+                
+                // Fetch recommendations based on the selected movie
+                const response = await fetch(`${API_BASE_URL}/content/${movie.title}`);
+                const recommendations = await response.json();
+                
+                // Filter out the current movie from recommendations
+                const filteredRecommendations = recommendations.filter(rec => rec.id !== movie.id);
+                
+                displayMoviesInRow(filteredRecommendations, recommendationsContainer);
+            } catch (error) {
+                console.error('Error showing movie details:', error);
+                movieDetails.innerHTML = '<p>Failed to load movie details.</p>';
+                recommendationsContainer.innerHTML = '<p>Failed to load recommendations.</p>';
+            }
+        }
+        
+        // Utility function to shuffle an array (for demo purposes)
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+    </script>
+</body>
+</html>
